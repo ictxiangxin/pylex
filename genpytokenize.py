@@ -57,12 +57,16 @@ def makePyPseudoDFA ():
         return groupStr(states, "0123456789")
     # ____________________________________________________________
     # Integer numbers
+
+    # 0[xX][0-9a-fA-F]+[lL]?
     hexNumber = chain(states,
                       newArcPair(states, "0"),
                       groupStr(states, "xX"),
                       atleastonce(states,
                                   groupStr(states, "0123456789abcdefABCDEF")),
                       maybe(states, groupStr(states, "lL")))
+
+    # 0([oO][0-7])?[0-7]*[lL]?
     octNumber = chain(states,
                       newArcPair(states, "0"),
                       maybe(states,
@@ -71,19 +75,26 @@ def makePyPseudoDFA ():
                                   groupStr(states, "01234567"))),
                       any(states, groupStr(states, "01234567")),
                       maybe(states, groupStr(states, "lL")))
+
+    # 0[bB][01]+[lL]?
     binNumber = chain(states,
                       newArcPair(states, "0"),
                       groupStr(states, "bB"),
                       atleastonce(states, groupStr(states, "01")),
                       maybe(states, groupStr(states, "lL")))
+
+    # [1-9][0-9]*[lL]?
     decNumber = chain(states,
                       groupStr(states, "123456789"),
                       any(states, makeDigits()),
                       maybe(states, groupStr(states, "lL")))
+
+    # (hexNumber|octNumber|binNumber|decNumber)
     intNumber = group(states, hexNumber, octNumber, binNumber, decNumber)
     # ____________________________________________________________
     # Exponents
     def makeExp ():
+        # [eE][+-]?[0-9]+
         return chain(states,
                      groupStr(states, "eE"),
                      maybe(states, groupStr(states, "+-")),
@@ -91,6 +102,8 @@ def makePyPseudoDFA ():
     # ____________________________________________________________
     # Floating point numbers
     def makeFloat ():
+
+        # ([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?
         pointFloat = chain(states,
                            group(states,
                                  chain(states,
@@ -101,12 +114,18 @@ def makePyPseudoDFA ():
                                        newArcPair(states, "."),
                                        atleastonce(states, makeDigits()))),
                            maybe(states, makeExp()))
+
+        # [0-9]+([eE][+-]?[0-9]+)?
         expFloat = chain(states,
                          atleastonce(states, makeDigits()),
                          makeExp())
+
+        # (pointFloat|expFloat)
         return group(states, pointFloat, expFloat)
     # ____________________________________________________________
     # Imaginary numbers
+
+    # ([0-9]+[jJ]|makeFloat[jJ])
     imagNumber = group(states,
                        chain(states,
                              atleastonce(states, makeDigits()),
@@ -116,6 +135,8 @@ def makePyPseudoDFA ():
                              groupStr(states, "jJ")))
     # ____________________________________________________________
     # Any old number.
+
+    # (imagNumber|makeFloat|intNumber)
     number = group(states, imagNumber, makeFloat(), intNumber)
     # ____________________________________________________________
     # Funny
